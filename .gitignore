@@ -1,0 +1,15 @@
+# Python-related ignores
+__pycache__/
+*.py[cod]
+.env
+.venv/
+.DS_Store
+
+# VS Code settings
+.vscode/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
