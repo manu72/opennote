@@ -1,0 +1,7 @@
+{
+    "notebook_name": "first_notebook",
+    "documents": [
+        "Subclass 444 Special Category visa (SCV).pdf"
+    ],
+    "vector_db_path": "notebooks/first_notebook/chromadb"
+}
