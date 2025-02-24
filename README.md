@@ -34,6 +34,27 @@ opennote/
 └── pyproject.toml         # Build configuration and metadata
 ```
 
+## Notebooks Folder Structure
+
+```plaintext
+opennote/
+│── notebooks/
+│   ├── notebook1/
+│   │   ├── docs/  (Stores PDFs)
+│   │   ├── chromadb/  (Stores vector database)
+│   │   ├── metadata.json (Stores metadata about notebook)
+│   ├── notebook2/
+│   │   ├── docs/
+│   │   ├── chromadb/
+│   │   ├── metadata.json
+│── src/
+│   ├── opennote/
+│   │   ├── notebook_manager.py  (Handles notebook creation)
+│   │   ├── pdf_processor.py  (Extracts text from PDFs)
+│   │   ├── vector_store.py  (Handles ChromaDB interactions)
+│   ├── main.py
+```
+
 ## 🛠️ Setup and Installation
 
 1. Clone the repository:
@@ -102,7 +123,7 @@ This project follows PEP 8 guidelines and uses:
 
 ## 📦 Directory Purpose
 
-### src/notebooklm/
+### src/opennote/
 
 The main application code resides here:
 
@@ -131,11 +152,8 @@ Local storage directory:
 
 ### notebooks/
 
-Jupyter notebooks for:
-
-- Prototyping features
-- Testing ideas
-- Documentation examples
+Similar to Notebooks in NotebookLM. These are user-defined notebooks that store their own pdf data in their own directories.
+PDFs are converted to text and then converted to chunks of text. These chunks are then vectorised and stored in the vector database.
 
 ### docs/
 
