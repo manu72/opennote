@@ -57,6 +57,7 @@ opennote/
    ```
 
 4. Set up environment variables:
+
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
