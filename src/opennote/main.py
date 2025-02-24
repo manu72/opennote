@@ -7,6 +7,9 @@ from opennote.pdf_processor import process_new_pdfs
 from opennote.vector_store import store_text_in_chromadb
 
 def main():
+    """
+    Main function to create a notebook, process new PDFs, and store the text in ChromaDB
+    """
     if len(sys.argv) < 2:
         print("Usage: python main.py <notebook_name>")
         return
