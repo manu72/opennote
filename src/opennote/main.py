@@ -75,6 +75,13 @@ def main():
             print(f"Loaded chat history from {args.load_history}")
             
         chat_loop(agent, args.save_history)
+=======
+Script creates a notebook, adds PDFs, processes them, and generates the ChromaDB vector store
+"""
+import sys
+from opennote.notebook_manager import create_notebook
+from opennote.pdf_processor import process_new_pdfs
+from opennote.vector_store import store_text_in_chromadb
 
 if __name__ == "__main__":
     main()
