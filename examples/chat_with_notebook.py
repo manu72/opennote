@@ -32,23 +32,26 @@ def main():
                         help="Temperature for response generation (default: 0.7)")
     parser.add_argument("--top-k", type=int, default=5,
                         help="Number of chunks to retrieve (default: 5)")
-    
+
     args = parser.parse_args()
-    
+
     # Check if the notebook exists
     notebook_path = Path(f"notebooks/{args.notebook_name}")
     if not notebook_path.exists() or not (notebook_path / "metadata.json").exists():
         print(f"Error: Notebook '{args.notebook_name}' does not exist")
         sys.exit(1)
-    
+
     # Check if the notebook has been processed
     chroma_path = notebook_path / "chromadb"
     if not chroma_path.exists() or not any(chroma_path.iterdir()):
         print(f"Error: Notebook '{args.notebook_name}' has not been processed yet")
         print("Please process PDFs first using the main script or Streamlit app")
         sys.exit(1)
-    
+
     print(f"Initializing agent for notebook '{args.notebook_name}'...")
+    if not args.model:
+        print("Error: Model name must be provided")
+        sys.exit(1)
     agent = create_agent(
         notebook_name=args.notebook_name,
         llm_provider=args.provider,
@@ -57,7 +60,7 @@ def main():
         top_k=args.top_k
     )
     print("Agent initialized successfully")
-    
+
     if args.interactive:
         # Interactive mode
         print("\n=== Interactive Chat Mode ===")
@@ -66,11 +69,11 @@ def main():
         print("Type 'save' to save the conversation history")
         print("Type 'help' to see these commands again")
         print("===========================\n")
-        
+
         while True:
             try:
                 user_input = input("\nYou: ")
-                
+
                 # Check for special commands
                 if user_input.lower() in ["exit", "quit", "q"]:
                     print("Ending chat session")
@@ -93,12 +96,12 @@ def main():
                     continue
                 elif not user_input.strip():
                     continue
-                
+
                 # Get response from agent
                 print("\nAgent: ", end="", flush=True)
                 response = agent.chat(user_input)
                 print(response)
-                
+
             except KeyboardInterrupt:
                 print("\nEnding chat session")
                 break
@@ -111,13 +114,13 @@ def main():
             "Can you summarize the key points from the documents?",
             "What are the most important concepts mentioned in the documents?"
         ]
-        
+
         print("\n=== Example Questions ===")
         for i, question in enumerate(example_questions, 1):
             print(f"\nQuestion {i}: {question}")
             print(f"Answer: {agent.chat(question)}")
-        
+
         print("\nTo chat interactively, run with the --interactive flag")
 
 if __name__ == "__main__":
-    main() 
+    main()
