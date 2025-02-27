@@ -13,3 +13,15 @@ __pycache__/
 
 # Virtual environments
 venv/
+
+# ChromaDB
+.chroma/
+
+# Chat history
+chat_history.json
+
+# all notebooks
+notebooks/
+
+# all pdfs
+pdfs/
