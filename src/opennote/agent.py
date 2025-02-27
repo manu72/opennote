@@ -72,6 +72,9 @@ class Agent:
         
         # Conversation memory
         self.conversation_memory = []
+        
+        # Store the last retrieved chunks for UI display
+        self.last_retrieved_chunks = []
     
     def _retrieve_context(self, query: str) -> List[Dict[str, Any]]:
         """
@@ -196,6 +199,9 @@ ANSWER:"""
         """
         # Retrieve relevant context
         context = self._retrieve_context(query)
+        
+        # Store the retrieved chunks for UI display
+        self.last_retrieved_chunks = context
         
         # Generate prompt with context and conversation memory
         prompt = self._generate_prompt(query, context)

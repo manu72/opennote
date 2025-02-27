@@ -70,24 +70,24 @@ def list_notebooks():
     notebooks_dir = Path("notebooks")
     if not notebooks_dir.exists():
         return []
-    
+
     return [d.name for d in notebooks_dir.iterdir() if d.is_dir() and (d / "metadata.json").exists()]
 
 def upload_and_save_pdfs(notebook_name, uploaded_files):
     """Save uploaded PDF files to the notebook's docs directory."""
     if not uploaded_files:
         return []
-    
+
     docs_dir = Path(f"notebooks/{notebook_name}/docs")
     docs_dir.mkdir(exist_ok=True)
-    
+
     saved_files = []
     for uploaded_file in uploaded_files:
         file_path = docs_dir / uploaded_file.name
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
         saved_files.append(uploaded_file.name)
-    
+
     return saved_files
 
 def main():
@@ -95,20 +95,55 @@ def main():
     st.title("OpenNote Testing UI")
     st.markdown("A simple interface for testing OpenNote functionality")
     
-    # Create tabs for different functionality
-    tabs = st.tabs(["📁 Notebook Management", "📄 PDF Processing", "💬 Chat Interface"])
+    # Add help section with expandable container
+    with st.expander("ℹ️ How to use this app"):
+        st.markdown("""
+        ### Getting Started with OpenNote
+        
+        This app allows you to test the OpenNote RAG (Retrieval-Augmented Generation) system with your own documents. Follow these steps:
+        
+        1. **Create a Notebook**: Start by creating a new notebook or selecting an existing one in the Notebook Management tab.
+        
+        2. **Upload Documents**: In the PDF Processing tab, upload your PDF documents and save them to your notebook.
+        
+        3. **Process Documents**: Configure chunking parameters and process your PDFs to create the vector database.
+        
+        4. **Chat with Your Documents**: In the Chat Interface tab, configure your LLM settings, initialize the agent, and start asking questions about your documents.
+        
+        ### Understanding Configuration Options
+        
+        - **Chunk Size**: Controls how large each piece of text is when splitting your documents. Larger chunks provide more context but may reduce precision.
+        
+        - **Chunk Overlap**: Determines how much text overlaps between consecutive chunks to maintain context across chunk boundaries.
+        
+        - **LLM Provider**: Choose between OpenAI (cloud-based) or Ollama (local) models.
+        
+        - **Temperature**: Controls the randomness in responses. Lower values (0.0-0.3) give more focused answers, while higher values (0.7-1.0) produce more creative outputs.
+        
+        - **Top K Chunks**: The number of document chunks to retrieve for each query. More chunks provide broader context but may include less relevant information.
+        
+        ### Tips for Best Results
+        
+        - Use descriptive notebook names to organize your documents by topic or project.
+        - For longer documents, consider using larger chunk sizes (1000-1500) with more overlap (200-300).
+        - Start with a lower temperature (0.3-0.5) for factual questions and higher (0.7-0.9) for creative tasks.
+        - Experiment with different Top K values to find the right balance between focused and comprehensive responses.
+        """)
     
+    # Create tabs for different functionality
+    tabs = st.tabs(["Notebook Management", "PDF Processing", "Chat Interface"])
+
     # Tab 1: Notebook Management
     with tabs[0]:
         st.header("Notebook Management")
-        
+
         col1, col2 = st.columns([1, 1])
-        
+
         with col1:
             st.subheader("Create New Notebook")
             new_notebook_name = st.text_input("Notebook Name", key="new_notebook")
             create_button = st.button("Create Notebook")
-            
+
             if create_button and new_notebook_name:
                 try:
                     notebook_path = create_notebook(new_notebook_name)
@@ -116,7 +151,7 @@ def main():
                     st.session_state.current_notebook = new_notebook_name
                 except Exception as e:
                     st.error(f"Error creating notebook: {str(e)}")
-        
+
         with col2:
             st.subheader("Select Existing Notebook")
             notebooks = list_notebooks()
@@ -131,50 +166,50 @@ def main():
                     st.success(f"Notebook '{selected_notebook}' selected")
             else:
                 st.info("No notebooks found. Create a new one.")
-        
+
         # Display current notebook info
         st.divider()
         if st.session_state.current_notebook:
             st.subheader("Current Notebook")
             notebook_path = Path(f"notebooks/{st.session_state.current_notebook}")
-            
+
             # Get notebook stats
             docs_path = notebook_path / "docs"
             chroma_path = notebook_path / "chromadb"
-            
+
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.metric("Notebook", st.session_state.current_notebook)
-            
+
             with col2:
                 pdf_count = len(list(docs_path.glob("*.pdf"))) if docs_path.exists() else 0
                 st.metric("PDF Documents", pdf_count)
-            
+
             with col3:
                 has_vectors = chroma_path.exists() and any(chroma_path.iterdir())
                 st.metric("Vector DB", "Created" if has_vectors else "Not created")
-            
+
             st.text(f"Notebook path: {notebook_path.absolute()}")
             st.text(f"ChromaDB path: {chroma_path.absolute()}")
-    
+
     # Tab 2: PDF Processing
     with tabs[1]:
         st.header("PDF Processing")
-        
+
         if not st.session_state.current_notebook:
             st.warning("Please select or create a notebook first")
         else:
             st.subheader(f"Upload PDFs to '{st.session_state.current_notebook}'")
-            
+
             uploaded_files = st.file_uploader(
                 "Upload PDF files", 
                 type="pdf", 
                 accept_multiple_files=True,
                 key="pdf_uploader"
             )
-            
+
             col1, col2 = st.columns([1, 1])
-            
+
             with col1:
                 if st.button("Save PDFs") and uploaded_files:
                     saved_files = upload_and_save_pdfs(st.session_state.current_notebook, uploaded_files)
@@ -182,17 +217,29 @@ def main():
                         st.success(f"Saved {len(saved_files)} PDF files: {', '.join(saved_files)}")
                     else:
                         st.info("No files were uploaded")
-            
+
             with col2:
-                chunk_size = st.number_input("Chunk Size", min_value=100, max_value=5000, value=1000)
-                chunk_overlap = st.number_input("Chunk Overlap", min_value=0, max_value=1000, value=200)
-                
+                chunk_size = st.number_input(
+                    "Chunk Size", 
+                    min_value=100, 
+                    max_value=5000, 
+                    value=1000,
+                    help="The maximum size of each text chunk in characters. Larger chunks provide more context but may reduce precision. Recommended range: 500-2000."
+                )
+                chunk_overlap = st.number_input(
+                    "Chunk Overlap", 
+                    min_value=0, 
+                    max_value=1000, 
+                    value=200,
+                    help="The number of characters that overlap between consecutive chunks. Higher overlap helps maintain context across chunks. Typically 10-20% of chunk size."
+                )
+
                 if st.button("Process PDFs"):
                     with st.spinner("Processing PDFs..."):
                         try:
                             # Process new PDFs
                             extracted_texts = process_new_pdfs(st.session_state.current_notebook)
-                            
+
                             if extracted_texts:
                                 # Store in ChromaDB
                                 store_text_in_chromadb(
@@ -206,11 +253,11 @@ def main():
                                 st.info("No new documents to process")
                         except Exception as e:
                             st.error(f"Error processing PDFs: {str(e)}")
-            
+
             # Display current PDFs
             st.divider()
             st.subheader("Current PDFs")
-            
+
             docs_path = Path(f"notebooks/{st.session_state.current_notebook}/docs")
             if docs_path.exists():
                 pdfs = list(docs_path.glob("*.pdf"))
@@ -223,11 +270,11 @@ def main():
                     st.info("No PDFs found in this notebook")
             else:
                 st.info("Documents directory does not exist yet")
-    
+
     # Tab 3: Chat Interface
     with tabs[2]:
         st.header("Chat with Your Notebook")
-        
+
         if not st.session_state.current_notebook:
             st.warning("Please select or create a notebook first")
         else:
@@ -239,11 +286,41 @@ def main():
                 # Chat settings
                 with st.sidebar:
                     st.header("Chat Settings")
-                    provider = st.selectbox("LLM Provider", ["openai", "ollama"], index=0)
-                    model = st.text_input("Model Name", value="gpt-3.5-turbo" if provider == "openai" else "deepseek-coder:latest")
-                    temperature = st.slider("Temperature", min_value=0.0, max_value=1.0, value=0.7, step=0.1)
-                    top_k = st.slider("Top K Chunks", min_value=1, max_value=20, value=5)
                     
+                    # Display API key status
+                    openai_api_key = os.getenv("OPENAI_API_KEY")
+                    if openai_api_key:
+                        st.success("✅ OPENAI_API_KEY is configured")
+                    else:
+                        st.error("❌ OPENAI_API_KEY is not set. Please add it to your .env file.")
+                    
+                    provider = st.selectbox(
+                        "LLM Provider", 
+                        ["openai", "ollama"], 
+                        index=0,
+                        help="Select the AI provider to use. OpenAI offers cloud-based models like GPT-4, while Ollama provides locally-run open-source models."
+                    )
+                    model = st.text_input(
+                        "Model Name", 
+                        value="gpt-4o" if provider == "openai" else "deepseek-coder:latest",
+                        help="The specific model to use. For OpenAI, try gpt-3.5-turbo, gpt-4, or gpt-4o. For Ollama, try llama2, mistral, or deepseek-coder."
+                    )
+                    temperature = st.slider(
+                        "Temperature", 
+                        min_value=0.0, 
+                        max_value=1.0, 
+                        value=0.7, 
+                        step=0.1,
+                        help="Controls randomness in responses. Lower values (0.0-0.3) give more focused, deterministic responses. Higher values (0.7-1.0) produce more creative, varied outputs."
+                    )
+                    top_k = st.slider(
+                        "Top K Chunks", 
+                        min_value=1, 
+                        max_value=20, 
+                        value=5,
+                        help="The number of most relevant document chunks to retrieve for each query. More chunks provide broader context but may include less relevant information."
+                    )
+
                     if st.button("Initialize Agent"):
                         with st.spinner("Initializing agent..."):
                             try:
@@ -257,12 +334,12 @@ def main():
                                 st.success("Agent initialized successfully")
                             except Exception as e:
                                 st.error(f"Error initializing agent: {str(e)}")
-                
+
                 # Display chat messages
                 for message in st.session_state.messages:
                     with st.chat_message(message["role"]):
                         st.markdown(message["content"])
-                
+
                 # Chat input
                 if prompt := st.chat_input("Ask a question about your documents..."):
                     if not st.session_state.agent:
@@ -270,20 +347,29 @@ def main():
                     else:
                         # Add user message to chat history
                         st.session_state.messages.append({"role": "user", "content": prompt})
-                        
+
                         # Display user message
                         with st.chat_message("user"):
                             st.markdown(prompt)
-                        
+
                         # Generate response
                         with st.chat_message("assistant"):
                             with st.spinner("Thinking..."):
                                 try:
                                     response = st.session_state.agent.chat(prompt)
                                     st.markdown(response)
-                                    
+
                                     # Add assistant response to chat history
                                     st.session_state.messages.append({"role": "assistant", "content": response})
+                                    
+                                    # Display retrieved chunks if available
+                                    if hasattr(st.session_state.agent, 'last_retrieved_chunks') and st.session_state.agent.last_retrieved_chunks:
+                                        with st.expander("View retrieved document chunks"):
+                                            for i, chunk in enumerate(st.session_state.agent.last_retrieved_chunks):
+                                                st.markdown(f"**Chunk {i+1}** (Source: {chunk.get('metadata', {}).get('source', 'Unknown')})")
+                                                st.markdown(f"```\n{chunk.get('text', '')[:300]}...\n```")
+                                                st.markdown(f"Relevance Score: {chunk.get('relevance_score', 'N/A'):.2f}" if chunk.get('relevance_score') else "Relevance Score: N/A")
+                                                st.divider()
                                 except Exception as e:
                                     error_msg = f"Error generating response: {str(e)}"
                                     st.error(error_msg)
