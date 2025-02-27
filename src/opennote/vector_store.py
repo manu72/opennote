@@ -4,9 +4,10 @@ This module handles the storage of text data in a ChromaDB vector database.
 import os
 import json
 import uuid
+import re
 from typing import List, Dict, Any, Optional
 import chromadb
-from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction  # type: ignore
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -16,6 +17,35 @@ load_dotenv()
 CHROMA_EMBEDDING_MODEL = os.getenv("CHROMA_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 DEFAULT_CHUNK_SIZE = 1000
 DEFAULT_CHUNK_OVERLAP = 200
+
+def sanitize_collection_name(name: str) -> str:
+    """
+    Sanitize collection name to meet ChromaDB requirements:
+    - 3-63 characters
+    - Starts and ends with alphanumeric
+    - Contains only alphanumeric, underscores, or hyphens
+    - No consecutive periods
+    - Not a valid IPv4 address
+    """
+    # Replace spaces and other invalid characters with underscores
+    sanitized = re.sub(r'[^a-zA-Z0-9_-]', '_', name)
+    
+    # Ensure it starts and ends with alphanumeric
+    if not sanitized[0].isalnum():
+        sanitized = 'c' + sanitized
+    if not sanitized[-1].isalnum():
+        sanitized = sanitized + '0'
+    
+    # Ensure length is between 3-63 characters
+    if len(sanitized) < 3:
+        sanitized = sanitized + '0' * (3 - len(sanitized))
+    if len(sanitized) > 63:
+        sanitized = sanitized[:63]
+        # Ensure it still ends with alphanumeric
+        if not sanitized[-1].isalnum():
+            sanitized = sanitized[:-1] + '0'
+    
+    return sanitized
 
 def initialize_chromadb(vector_db_path: str):
     """Initializes ChromaDB instance for a notebook."""
@@ -100,34 +130,43 @@ def store_text_in_chromadb(notebook_name: str, texts: list,
 
     # Initialize ChromaDB
     client = initialize_chromadb(vector_db_path)
+
+    # Sanitize collection name for ChromaDB
+    sanitized_name = sanitize_collection_name(notebook_name)
+    existing_collections = client.list_collections()
+    if sanitized_name in existing_collections:
+        raise ValueError(f"Collection name '{sanitized_name}' already exists.")
     collection = client.get_or_create_collection(
-        name=notebook_name,
+        name=sanitized_name,
         embedding_function=SentenceTransformerEmbeddingFunction(model_name=CHROMA_EMBEDDING_MODEL)
     )
-    
+
     # Load metadata to track chunks
     with open(metadata_path, "r") as f:
         metadata = json.load(f)
-    
+
     # Initialize chunks tracking if not present
     if "chunks" not in metadata:
         metadata["chunks"] = {}
-    
+
+    # Store the sanitized collection name in metadata
+    metadata["collection_name"] = sanitized_name
+
     total_chunks = 0
-    
+
     # Process each document
     for doc in texts:
         filename = doc["filename"]
         text = doc["text"]
-        
+
         # Chunk the text
         chunks = chunk_text(text, chunk_size, chunk_overlap)
-        
+
         # Add chunks to ChromaDB
         ids = []
         documents = []
         metadatas = []
-        
+
         for chunk in chunks:
             chunk_id = chunk["id"]
             ids.append(chunk_id)
@@ -138,7 +177,7 @@ def store_text_in_chromadb(notebook_name: str, texts: list,
                 "end": chunk["end"],
                 "source": filename
             })
-        
+
         # Store in ChromaDB
         if ids:
             collection.add(
@@ -146,11 +185,11 @@ def store_text_in_chromadb(notebook_name: str, texts: list,
                 documents=documents,
                 metadatas=metadatas
             )
-        
+
         # Update metadata
         metadata["chunks"][filename] = [chunk["id"] for chunk in chunks]
         total_chunks += len(chunks)
-    
+
     # Save updated metadata
     with open(metadata_path, "w") as f:
         json.dump(metadata, f, indent=4)
@@ -171,14 +210,34 @@ def query_vector_db(notebook_name: str, query: str, top_k: int = 5) -> List[Dict
     """
     notebook_path = os.path.join("notebooks", notebook_name)
     vector_db_path = os.path.join(notebook_path, "chromadb")
-    
+    metadata_path = os.path.join(notebook_path, "metadata.json")
+
     # Initialize ChromaDB
     client = initialize_chromadb(vector_db_path)
+
+    # Get the sanitized collection name from metadata if available
+    collection_name = notebook_name
+    if os.path.exists(metadata_path):
+        try:
+            with open(metadata_path, "r") as f:
+                metadata = json.load(f)
+                if "collection_name" in metadata:
+                    collection_name = metadata["collection_name"]
+                else:
+                    # If not in metadata, sanitize it now
+                    collection_name = sanitize_collection_name(notebook_name)
+        except:
+            # Fallback to sanitizing the name
+            collection_name = sanitize_collection_name(notebook_name)
+    else:
+        # Fallback to sanitizing the name
+        collection_name = sanitize_collection_name(notebook_name)
+
     collection = client.get_or_create_collection(
-        name=notebook_name,
+        name=collection_name,
         embedding_function=SentenceTransformerEmbeddingFunction(model_name=CHROMA_EMBEDDING_MODEL)
     )
-    
+
     # Query the collection
     results = collection.query(
         query_texts=[query],

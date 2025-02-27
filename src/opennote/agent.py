@@ -261,6 +261,13 @@ ANSWER:"""
                 {"query": item["query"], "response": item["response"]} 
                 for item in self.chat_history[-self.max_history_length:]
             ]
+    
+    def clear_history(self) -> None:
+        """
+        Clear the chat history and conversation memory.
+        """
+        self.chat_history = []
+        self.conversation_memory = []
 
 
 def create_agent(

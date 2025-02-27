@@ -1,140 +1,126 @@
 #!/usr/bin/env python3
 """
 Example script demonstrating how to use the OpenNote agent programmatically.
+
+This script shows how to:
+1. Initialize an agent for a specific notebook
+2. Ask questions and get responses
+3. Use the agent in both interactive and non-interactive modes
+
+Usage:
+    python examples/chat_with_notebook.py notebook_name [--interactive] [--provider {openai,ollama}]
 """
-import os
 import sys
 import argparse
-from datetime import datetime
+from pathlib import Path
 
-# Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add the project root to the path so we can import the opennote package
+sys.path.append(str(Path(__file__).parent.parent))
 
 from src.opennote.agent import create_agent
-from src.opennote.notebook_manager import create_notebook
-from src.opennote.vector_store import store_text_in_chromadb, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP
 
 def main():
-    """Main function to demonstrate agent usage."""
+    """Main function to demonstrate using the OpenNote agent programmatically."""
     parser = argparse.ArgumentParser(description="Chat with an OpenNote notebook")
     parser.add_argument("notebook_name", help="Name of the notebook to chat with")
+    parser.add_argument("--interactive", "-i", action="store_true", 
+                        help="Start an interactive chat session")
     parser.add_argument("--provider", choices=["openai", "ollama"], default="openai",
                         help="LLM provider to use (default: openai)")
-    parser.add_argument("--model", help="Model name to use (defaults to environment settings)")
+    parser.add_argument("--model", help="Model name to use")
     parser.add_argument("--temperature", type=float, default=0.7,
                         help="Temperature for response generation (default: 0.7)")
-    parser.add_argument("--top-k", "-k", type=int, default=5,
+    parser.add_argument("--top-k", type=int, default=5,
                         help="Number of chunks to retrieve (default: 5)")
-    parser.add_argument("--max-history", type=int, default=10,
-                        help="Maximum conversation turns to remember (default: 10)")
-    parser.add_argument("--create", "-c", action="store_true",
-                        help="Create the notebook if it doesn't exist")
-    parser.add_argument("--load-history", "-l", 
-                        help="Path to load chat history from")
-    parser.add_argument("--interactive", "-i", action="store_true",
-                        help="Start an interactive chat session after examples")
-    
+
     args = parser.parse_args()
-    
-    # Create notebook if requested
-    if args.create:
-        create_notebook(args.notebook_name)
-        print(f"Created notebook: {args.notebook_name}")
-        print("Add PDF files to notebooks/{}/docs/ and run the processing script before chatting.".format(args.notebook_name))
-        return
-    
-    # Check if notebook exists
-    notebook_path = os.path.join("notebooks", args.notebook_name)
-    if not os.path.exists(notebook_path):
-        print(f"Error: Notebook '{args.notebook_name}' does not exist.")
-        print("Use --create or -c flag to create it.")
-        return
-    
-    # Create agent
+
+    # Check if the notebook exists
+    notebook_path = Path(f"notebooks/{args.notebook_name}")
+    if not notebook_path.exists() or not (notebook_path / "metadata.json").exists():
+        print(f"Error: Notebook '{args.notebook_name}' does not exist")
+        sys.exit(1)
+
+    # Check if the notebook has been processed
+    chroma_path = notebook_path / "chromadb"
+    if not chroma_path.exists() or not any(chroma_path.iterdir()):
+        print(f"Error: Notebook '{args.notebook_name}' has not been processed yet")
+        print("Please process PDFs first using the main script or Streamlit app")
+        sys.exit(1)
+
+    print(f"Initializing agent for notebook '{args.notebook_name}'...")
+    if not args.model:
+        print("Error: Model name must be provided")
+        sys.exit(1)
     agent = create_agent(
         notebook_name=args.notebook_name,
         llm_provider=args.provider,
         model_name=args.model,
         temperature=args.temperature,
-        top_k=args.top_k,
-        max_history_length=args.max_history
+        top_k=args.top_k
     )
-    
-    # Load history if requested
-    if args.load_history and os.path.exists(args.load_history):
-        agent.load_chat_history(args.load_history)
-        print(f"Loaded chat history from {args.load_history}")
-    
-    # Example queries demonstrating conversation memory
-    example_queries = [
-        "What is this notebook about?",
-        "Summarize the key points from the documents.",
-        "Can you elaborate on the previous summary?",  # This will use conversation memory
-        "What are the main topics covered in these documents?",
-        "How do those topics relate to what we discussed earlier?"  # This will use conversation memory
-    ]
-    
-    print(f"Chatting with notebook: {args.notebook_name}")
-    print(f"Using {args.provider} as the LLM provider")
-    print(f"Retrieving top {args.top_k} chunks for each query")
-    print(f"Remembering up to {args.max_history} conversation turns")
-    print("\nExample queries demonstrating conversation memory:")
-    
-    for i, query in enumerate(example_queries, 1):
-        print(f"\nQuery {i}: {query}")
-        response = agent.chat(query)
-        print(f"Response: {response}")
-        print("-" * 50)
-    
-    # Save chat history
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    history_path = os.path.join(notebook_path, "history", f"example_chat_{timestamp}.json")
-    os.makedirs(os.path.join(notebook_path, "history"), exist_ok=True)
-    agent.save_chat_history(history_path)
-    print(f"\nChat history saved to: {history_path}")
-    
-    # Interactive mode if requested
+    print("Agent initialized successfully")
+
     if args.interactive:
-        print("\nStarting interactive chat mode. Type 'exit', 'quit', or 'q' to end.")
-        print("Type 'save' to save the conversation history.")
-        print("Type 'clear' to clear the conversation memory.")
-        print("-" * 50)
-        
+        # Interactive mode
+        print("\n=== Interactive Chat Mode ===")
+        print("Type 'exit', 'quit', or 'q' to end the session")
+        print("Type 'clear' to clear the conversation history")
+        print("Type 'save' to save the conversation history")
+        print("Type 'help' to see these commands again")
+        print("===========================\n")
+
         while True:
             try:
-                user_input = input("\nYou: ").strip()
-                
+                user_input = input("\nYou: ")
+
+                # Check for special commands
                 if user_input.lower() in ["exit", "quit", "q"]:
+                    print("Ending chat session")
                     break
-                    
-                if user_input.lower() == "save":
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    save_path = os.path.join(notebook_path, "history", f"interactive_chat_{timestamp}.json")
-                    agent.save_chat_history(save_path)
-                    print(f"Chat history saved to {save_path}")
+                elif user_input.lower() == "clear":
+                    agent.clear_history()
+                    print("Conversation history cleared")
                     continue
-                    
-                if user_input.lower() == "clear":
-                    agent.conversation_memory = []
-                    print("Conversation memory cleared.")
+                elif user_input.lower() == "save":
+                    history_path = agent.save_chat_history()
+                    print(f"Conversation history saved to {history_path}")
                     continue
-                    
-                if not user_input:
+                elif user_input.lower() == "help":
+                    print("\n=== Commands ===")
+                    print("exit, quit, q: End the session")
+                    print("clear: Clear the conversation history")
+                    print("save: Save the conversation history")
+                    print("help: Show this help message")
+                    print("===============\n")
                     continue
-                    
+                elif not user_input.strip():
+                    continue
+
+                # Get response from agent
+                print("\nAgent: ", end="", flush=True)
                 response = agent.chat(user_input)
-                print(f"\nAI: {response}")
-                
+                print(response)
+
             except KeyboardInterrupt:
+                print("\nEnding chat session")
                 break
             except Exception as e:
-                print(f"Error: {str(e)}")
-        
-        # Save final history
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        final_path = os.path.join(notebook_path, "history", f"final_chat_{timestamp}.json")
-        agent.save_chat_history(final_path)
-        print(f"\nFinal chat history saved to: {final_path}")
+                print(f"\nError: {str(e)}")
+    else:
+        # Non-interactive mode with example questions
+        example_questions = [
+            "What are the main topics covered in these documents?",
+            "Can you summarize the key points from the documents?",
+            "What are the most important concepts mentioned in the documents?"
+        ]
+
+        print("\n=== Example Questions ===")
+        for i, question in enumerate(example_questions, 1):
+            print(f"\nQuestion {i}: {question}")
+            print(f"Answer: {agent.chat(question)}")
+
+        print("\nTo chat interactively, run with the --interactive flag")
 
 if __name__ == "__main__":
-    main() 
+    main()

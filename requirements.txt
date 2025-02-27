@@ -173,3 +173,11 @@ websockets==15.0
 widgetsnbextension==4.0.13
 wrapt==1.17.2
 zipp==3.21.0
+streamlit==1.36.0
+pandas==2.2.3
+pyarrow==19.0.1
+altair==5.5.0
+gitpython==3.1.44
+pydeck==0.9.1
+toml==0.10.2
+openai==1.64.0
