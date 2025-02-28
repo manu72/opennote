@@ -13,17 +13,16 @@ Usage:
 import sys
 import argparse
 from pathlib import Path
+from src.opennote.agent import create_agent
 
 # Add the project root to the path so we can import the opennote package
 sys.path.append(str(Path(__file__).parent.parent))
-
-from src.opennote.agent import create_agent
 
 def main():
     """Main function to demonstrate using the OpenNote agent programmatically."""
     parser = argparse.ArgumentParser(description="Chat with an OpenNote notebook")
     parser.add_argument("notebook_name", help="Name of the notebook to chat with")
-    parser.add_argument("--interactive", "-i", action="store_true", 
+    parser.add_argument("--interactive", "-i", action="store_true",
                         help="Start an interactive chat session")
     parser.add_argument("--provider", choices=["openai", "ollama"], default="openai",
                         help="LLM provider to use (default: openai)")
