@@ -67,7 +67,7 @@ For a complete testing workflow:
 
 Make sure your `.env` file is properly configured with the necessary API keys and settings:
 
-```
+```no language
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-3.5-turbo
 OLLAMA_BASE_URL=http://localhost:11434
