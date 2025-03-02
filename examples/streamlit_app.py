@@ -12,6 +12,8 @@ Run with: streamlit run examples/streamlit_app.py
 import os
 import sys
 import time
+import json
+import shutil
 import streamlit as st  # type: ignore
 from pathlib import Path
 
@@ -102,11 +104,11 @@ def main():
         
         This app allows you to test the OpenNote RAG (Retrieval-Augmented Generation) system with your own documents. Follow these steps:
         
-        1. **Create a Notebook**: Start by creating a new notebook or selecting an existing one in the Notebook Management tab.
+        1. **Create or Manage Notebooks**: Start by creating a new notebook or selecting an existing one in the Notebook Management tab. You can also delete unwanted notebooks in the "Danger Zone" section.
         
-        2. **Upload Documents**: In the PDF Processing tab, upload your PDF documents and save them to your notebook.
+        2. **Upload Documents**: In the PDF Processing tab, upload your PDF documents and save them to your notebook. You can also delete PDFs using the trash icon next to each file.
         
-        3. **Process Documents**: Configure chunking parameters and process your PDFs to create the vector database.
+        3. **Process Documents**: Configure chunking parameters and process your PDFs to create the vector database. If you need to regenerate the vector database with new settings, use the "Regenerate Vector Database" button.
         
         4. **Chat with Your Documents**: In the Chat Interface tab, configure your LLM settings, initialize the agent, and start asking questions about your documents.
         
@@ -191,6 +193,42 @@ def main():
 
             st.text(f"Notebook path: {notebook_path.absolute()}")
             st.text(f"ChromaDB path: {chroma_path.absolute()}")
+            
+            # Add notebook deletion section
+            st.divider()
+            st.subheader("Danger Zone")
+            
+            delete_col1, delete_col2 = st.columns([3, 1])
+            
+            with delete_col1:
+                st.warning("Deleting a notebook will permanently remove all associated PDFs, vectors, and data.")
+            
+            with delete_col2:
+                # Use a delete button with confirmation
+                if st.button("Delete Notebook", type="primary", help="Permanently delete this notebook and all its data"):
+                    # Create a confirmation dialog
+                    delete_confirmation = st.text_input(
+                        f"Type '{st.session_state.current_notebook}' to confirm deletion:",
+                        key="delete_confirmation"
+                    )
+                    
+                    if delete_confirmation == st.session_state.current_notebook:
+                        try:
+                            # Delete the entire notebook directory
+                            shutil.rmtree(notebook_path)
+                            
+                            # Reset session state
+                            st.session_state.current_notebook = None
+                            st.session_state.agent = None
+                            st.session_state.messages = []
+                            
+                            st.success(f"Notebook '{delete_confirmation}' has been permanently deleted.")
+                            time.sleep(2)  # Give user time to see the message
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error deleting notebook: {str(e)}")
+                    elif delete_confirmation:
+                        st.error("Notebook name doesn't match. Deletion cancelled.")
 
     # Tab 2: PDF Processing
     with tabs[1]:
@@ -254,7 +292,7 @@ def main():
                         except Exception as e:
                             st.error(f"Error processing PDFs: {str(e)}")
 
-            # Display current PDFs
+            # Display current PDFs with delete buttons
             st.divider()
             st.subheader("Current PDFs")
 
@@ -264,12 +302,66 @@ def main():
                 if pdfs:
                     pdf_names = [pdf.name for pdf in pdfs]
                     st.write(f"Found {len(pdf_names)} PDFs:")
-                    for pdf in pdf_names:
-                        st.text(f"• {pdf}")
+                    
+                    # Display PDFs with delete buttons
+                    for i, pdf in enumerate(pdf_names):
+                        col1, col2 = st.columns([6, 1])
+                        with col1:
+                            st.text(f"• {pdf}")
+                        with col2:
+                            delete_key = f"delete_{i}_{pdf}"
+                            if st.button("🗑️", key=delete_key, help=f"Delete {pdf}"):
+                                try:
+                                    # Delete the PDF file
+                                    file_to_delete = docs_path / pdf
+                                    if file_to_delete.exists():
+                                        file_to_delete.unlink()
+                                        st.success(f"Deleted {pdf}")
+                                        # Reload the page to update the list
+                                        st.rerun()
+                                except Exception as e:
+                                    st.error(f"Error deleting file: {str(e)}")
                 else:
                     st.info("No PDFs found in this notebook")
             else:
                 st.info("Documents directory does not exist yet")
+                
+            # Add option to regenerate the vector database
+            st.divider()
+            st.subheader("Vector Database Management")
+            
+            chroma_path = Path(f"notebooks/{st.session_state.current_notebook}/chromadb")
+            has_vectors = chroma_path.exists() and any(chroma_path.iterdir())
+            
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                st.metric("Vector DB Status", "Created" if has_vectors else "Not created")
+            
+            with col2:
+                if has_vectors:
+                    if st.button("Regenerate Vector Database", 
+                                  help="This will delete the existing vector database and recreate it from all PDFs using current chunking settings"):
+                        try:
+                            # Delete existing ChromaDB directory
+                            shutil.rmtree(chroma_path)
+                            st.success("Existing vector database deleted.")
+                            
+                            # Update notebook metadata to reprocess all PDFs
+                            metadata_path = Path(f"notebooks/{st.session_state.current_notebook}/metadata.json")
+                            if metadata_path.exists():
+                                with open(metadata_path, "r") as f:
+                                    metadata = json.load(f)
+                                
+                                # Clear processed documents list to force reprocessing
+                                metadata["documents"] = []
+                                
+                                with open(metadata_path, "w") as f:
+                                    json.dump(metadata, f, indent=4)
+                                
+                                st.info("Ready to regenerate. Please click 'Process PDFs' to rebuild the vector database with current settings.")
+                        except Exception as e:
+                            st.error(f"Error regenerating vector database: {str(e)}")
 
     # Tab 3: Chat Interface
     with tabs[2]:

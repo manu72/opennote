@@ -3,5 +3,65 @@
     "documents": [
         "Subclass 444 Special Category visa (SCV).pdf"
     ],
-    "vector_db_path": "notebooks/first_notebook/chromadb"
+    "vector_db_path": "notebooks/first_notebook/chromadb",
+    "document_structure": {
+        "Subclass 444 Special Category visa (SCV).pdf": {
+            "title": "Subclass 444 Special Category visa (SCV)",
+            "author": "",
+            "structured_path": "notebooks/first_notebook/structured_docs/Subclass 444 Special Category visa (SCV).json",
+            "has_toc": false,
+            "page_count": 11
+        }
+    },
+    "chunks": {
+        "Subclass 444 Special Category visa (SCV).pdf": [
+            "9ec30633-4cba-42ea-b037-2c625ed58821",
+            "b05899c6-71d5-4b1f-9f7d-f091e6f473fd",
+            "bc6164c6-8738-449f-868e-bc566de595ef",
+            "d14a9bc8-ac86-4523-ac43-71cd39594eae",
+            "ab414b00-7b2f-444c-bdb6-34f255fbbeee",
+            "e2e7e8d9-14c6-45f3-b4c0-e7ec04c2b112",
+            "42fb170d-4e70-4861-8341-aa377ee261c9",
+            "3d783c65-4871-40d2-a082-8715818755e3",
+            "62cd5dc7-bc84-416a-98a9-481156e8a11b",
+            "0be774d8-7acf-47be-911f-9cce8dca5035",
+            "5b165dde-45a8-4042-8e35-0c2739d77a5a",
+            "9ee0cf59-b940-452d-bdf0-fa73e618e1b6",
+            "04f6580a-07e5-4435-b7f5-b7e1fe25b3ef",
+            "248084a1-2f60-47e4-ae50-5760d2cae57c",
+            "6de8790b-e023-4e5e-9182-e3e3614a76a4",
+            "4a0f7cf4-b5fa-486c-9d28-176bf2e49dcc",
+            "3387d1e7-2e6c-4451-aac3-31530816ce31",
+            "a472f0f4-7a0d-4363-85b5-f22dc4abfee6",
+            "758abcdd-1864-4ec8-9672-9b10e2b1c281",
+            "ef5f4739-06b8-4467-af88-c6e7f7ceb87d",
+            "40e5c33c-0d5b-445e-ac92-42b1bf9657b2",
+            "6c3c939f-8dbe-4733-93df-d2a2a32e5a87",
+            "ebb7c86b-7b04-47b3-815e-74ea42f0f756",
+            "69c31012-11fb-405e-9e81-0105e9685078",
+            "bc622ef1-9297-44a2-837c-f48a62b48308",
+            "3e1cf8a9-2500-4fb8-b1e6-7d6da8f51f57",
+            "fbb6458a-1e46-4c84-81f9-eb43a7eae080",
+            "29a63949-4fdb-4fac-a933-840a9b3eaf14",
+            "6dafba69-d1fc-4485-8c5d-570ca643062d",
+            "b9cce975-0beb-4008-9756-a4677506abb1",
+            "91c80e0f-c747-4837-a911-73b6b3e1dc96",
+            "f5daab6a-9b99-4d74-a1ff-fb7e43cde273",
+            "a27d9540-a0bc-4738-8a99-001bdb8dc024",
+            "f5f9e5d3-08db-4bdd-a1e1-1878dfeb6830",
+            "dc647d0f-a6d4-4a85-bd90-4760faf5f41f",
+            "46f15941-c98b-4e9e-87e6-7c39f3712ec8",
+            "2e3c91d3-50b7-4a45-840c-fd56dc180db1",
+            "bfdba3d1-9823-45a4-ac85-fdbfeda7114c",
+            "2c95b923-636c-489b-9e55-406609543b9e",
+            "eae532af-d76a-4d87-bd83-efa57202dcff",
+            "ffd77c93-25d4-4e35-86f6-a644ac1f50b2",
+            "63049558-5e59-47c9-b0ab-3ba429ff5385",
+            "a9a14197-a1dc-4594-9b02-72e44da36d50",
+            "5109c4e5-af35-4487-bdac-7866b1c3badc",
+            "ee8354d7-9da9-422e-907b-38484f446771",
+            "4da9530a-d113-4b0d-929e-7e93f77d62c5"
+        ]
+    },
+    "collection_name": "first_notebook"
 }
