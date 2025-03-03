@@ -25,6 +25,7 @@ streamlit run examples/streamlit_app.py
 - **Notebook Management**: Create new notebooks or select existing ones
 - **PDF Processing**: Upload PDFs, configure chunking parameters, and process documents
 - **Chat Interface**: Chat with your documents using either OpenAI or Ollama as the LLM provider
+- **Debug Mode**: View retrieved document chunks and relevance scores
 
 ## Programmatic Usage Example
 
@@ -45,12 +46,14 @@ python examples/chat_with_notebook.py my_notebook --provider ollama
 
 ### Command-line Options
 
-- `notebook_name`: Name of the notebook to chat with (required)
+- `notebook_name`: Name of the notebook to chat with (required, used as notebook_path internally)
 - `--interactive`, `-i`: Start an interactive chat session
 - `--provider`: LLM provider to use (`openai` or `ollama`, default: `openai`)
-- `--model`: Model name to use (defaults to environment settings)
+- `--openai-model`: OpenAI model name to use (defaults to environment settings)
+- `--ollama-model`: Ollama model name to use (defaults to environment settings)
 - `--temperature`: Temperature for response generation (default: 0.7)
 - `--top-k`: Number of chunks to retrieve (default: 5)
+- `--debug`: Enable debug mode to see retrieved chunks and processing details
 
 ## Testing Workflow
 
@@ -67,7 +70,7 @@ For a complete testing workflow:
 
 Make sure your `.env` file is properly configured with the necessary API keys and settings:
 
-```no language
+```plaintext
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-3.5-turbo
 OLLAMA_BASE_URL=http://localhost:11434
