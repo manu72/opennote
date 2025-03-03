@@ -1,6 +1,7 @@
 # OpenNote - Guidance for Claude
 
 ## Build Commands
+
 - Install: `pip install -r requirements.txt`
 - Run app: `python -m src.opennote.main notebook_name --chat/--create/--process`
 - Run tests: `pytest tests/`
@@ -9,6 +10,7 @@
 - Type check: `mypy src/`
 
 ## Code Style
+
 - **Formatting**: Black with 88 char line limit
 - **Imports**: stdlib first, then third-party, then local (use isort)
 - **Types**: Use type annotations for all function parameters and returns
