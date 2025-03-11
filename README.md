@@ -12,8 +12,9 @@ OpenNote is an open-source alternative to Google's NotebookLM, designed to provi
 - Semantic search capabilities with intelligent text chunking
 - Context-aware document analysis with RAG (Retrieval-Augmented Generation)
 - Conversation memory for multi-turn interactions
-- Support for multiple LLM providers (OpenAI and Ollama)
-=======
+
+- **Support for multiple LLM providers (OpenAI and Ollama)**
+
 - Semantic search capabilities
 - Context-aware document analysis
 - Local-first architecture for data privacy
@@ -198,9 +199,10 @@ OpenNote implements conversation memory for more coherent multi-turn interaction
 - **Context Awareness**: The agent remembers previous exchanges to provide more relevant responses
 - **Memory Management**: Commands to save, load, and clear conversation history
 - **Configurable Memory Size**: Control how many conversation turns to remember
+
 - **Persistent Storage**: Conversation histories are saved with timestamps in the notebook's history directory
-=======
-The project uses a combination of `config.yaml` and environment variables for configuration:
+
+  The project uses a combination of `config.yaml` and environment variables for configuration:
 
 - `configs/config.yaml`: General application settings
 - `.env`: Sensitive information like API keys
@@ -256,13 +258,13 @@ Contains example scripts demonstrating how to use OpenNote programmatically:
 
 ### notebooks/
 
-Similar to Notebooks in NotebookLM. These are user-defined notebooks that store their own data:
+Similar to Notebooks in NotebookLM. These are user-defined notebooks that store their own pdf data in their own directories.
+PDFs are converted to text and then converted to chunks of text. These chunks are then vectorised and stored in the vector database.
 
 - `docs/`: Stores PDF documents
 - `chromadb/`: Stores vector database with chunked text
 - `history/`: Stores conversation histories with timestamps
 - `metadata.json`: Stores metadata about the notebook and its documents
-=======
 - `vector_db.py`: Handles all ChromaDB interactions, vector storage, and retrieval operations
 - `main.py`: Application entry point and core logic implementation
 
@@ -285,11 +287,6 @@ Local storage directory:
 - ChromaDB files
 - Cached vectors
 - Temporary processing files
-
-### notebooks/
-
-Similar to Notebooks in NotebookLM. These are user-defined notebooks that store their own pdf data in their own directories.
-PDFs are converted to text and then converted to chunks of text. These chunks are then vectorised and stored in the vector database.
 
 ### docs/
 
@@ -322,7 +319,6 @@ Key dependencies (see requirements.txt for complete list):
 - openai: OpenAI API client
 - requests: HTTP client for Ollama API
 - python-dotenv: Environment variable management
-=======
 - chromadb: Vector database
 - openai: API integration
 - python-dotenv: Environment management
