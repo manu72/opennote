@@ -4,17 +4,52 @@ An open-source alternative to Google's NotebookLM, designed for intelligent docu
 
 ## 🎯 Project Overview
 
-OpenNote is an open-source alternative to Google's NotebookLM, designed to provide intelligent document analysis and interaction capabilities. It leverages ChromaDB for efficient vector storage and retrieval, enabling semantic search and contextual understanding of your documents.
+OpenNote is a Python-based intelligent document analysis and chat system that enables users to interact with their PDF documents using natural language queries. Built as an open-source alternative to Google's NotebookLM, it combines advanced text processing, semantic search, and large language models to provide contextual understanding of your documents.
+
+### Core Architecture
+
+OpenNote implements a **Retrieval-Augmented Generation (RAG)** pipeline with the following components:
+
+- **Document Processing**: Extracts structured text from PDFs using PyMuPDF with smart filtering of headers/footers
+- **Vector Database**: Uses ChromaDB with sentence-transformer embeddings for semantic similarity search
+- **Intelligent Chunking**: Implements semantic text chunking with overlap and importance scoring
+- **LLM Interface**: Supports both OpenAI GPT models and local Ollama models for response generation
+- **Conversation Memory**: Maintains context across chat sessions with persistent history
+
+### Technical Stack
+
+- **Python 3.8+**: Core runtime environment
+- **ChromaDB**: Vector database for embeddings storage and similarity search
+- **Sentence-Transformers**: Text embeddings using models like `all-mpnet-base-v2`
+- **PyMuPDF (fitz)**: Advanced PDF text extraction with metadata preservation
+- **OpenAI API**: Cloud-based LLM integration for response generation
+- **Ollama**: Local LLM support for privacy and cost-efficiency
+- **Streamlit**: Optional web interface for document interaction
+
+### ChromaDB Integration Details
+
+The vector store implementation (`vector_store.py:52-514`) provides sophisticated document indexing:
+
+1. **Collection Management**: Creates sanitized collection names following ChromaDB naming conventions
+2. **Semantic Chunking**: Splits documents into meaningful chunks (default 1000 chars, 200 overlap) with natural break points
+3. **Importance Scoring**: Calculates relevance scores based on content density, numbers, and structural markers
+4. **Enhanced Retrieval**: Combines vector similarity with importance weighting for better context selection
+5. **Query Enhancement**: Preprocesses queries by removing stopwords and question prefixes
+
+The system stores each chunk with metadata including source document, position, and calculated importance score for intelligent retrieval ranking.
 
 ## 🚀 Features
 
-- **Document Processing**: Extract and process text from PDF documents
-- **Semantic Search**: Vector-based search capabilities with intelligent text chunking
-- **RAG Integration**: Context-aware document analysis with Retrieval-Augmented Generation
-- **Multiple LLM Providers**: Support for both OpenAI and Ollama
-- **Conversation Memory**: Multi-turn interactions with history management
-- **Local-First Architecture**: All data stored locally for privacy
-- **Notebook Organization**: Organize documents into thematic notebooks
+- **Advanced PDF Processing**: Structured text extraction with metadata preservation and header/footer filtering
+- **Semantic Search**: ChromaDB-powered vector search with sentence-transformer embeddings
+- **Intelligent Text Chunking**: Semantic chunking with importance scoring and natural break points
+- **RAG Pipeline**: Context-aware document analysis with Retrieval-Augmented Generation
+- **Multiple LLM Providers**: Support for both OpenAI GPT models and local Ollama models
+- **Conversation Memory**: Multi-turn interactions with persistent chat history and context management
+- **Local-First Architecture**: All data stored locally for privacy and control
+- **Notebook Organization**: Organize documents into thematic collections with metadata tracking
+- **Enhanced Query Processing**: Query optimization with stopword removal and semantic enhancement
+- **Flexible Configuration**: Customizable chunking parameters, retrieval settings, and model options
 
 ## 📁 Project Structure
 
@@ -22,24 +57,29 @@ OpenNote is an open-source alternative to Google's NotebookLM, designed to provi
 opennote/
 ├── src/
 │   └── opennote/         # Main application code
-│       ├── agent.py      # RAG-based AI agent implementation
-│       ├── cli.py        # Command-line interface
-│       ├── main.py       # Application entry point
-│       ├── notebook_manager.py # Notebook creation and management
-│       ├── pdf_processor.py # PDF text extraction
-│       └── vector_store.py # ChromaDB integration and vector operations
+│       ├── agent.py      # RAG-based AI agent with conversation memory
+│       ├── cli.py        # Interactive command-line interface
+│       ├── main.py       # Application entry point with argument parsing
+│       ├── notebook_manager.py # Notebook creation and organization
+│       ├── pdf_processor.py # Advanced PDF text extraction with structure preservation
+│       └── vector_store.py # ChromaDB integration with semantic chunking
 ├── tests/                # Unit tests directory
-├── examples/             # Example scripts for using OpenNote
-│   ├── chat_with_notebook.py # Example of programmatic usage
+│   └── test_vector_db.py # Vector database functionality tests
+├── examples/             # Example scripts and applications
+│   ├── chat_with_notebook.py # Programmatic usage example
 │   └── streamlit_app.py  # Web-based UI implementation
-├── notebooks/            # User-defined notebooks
+├── notebooks/            # User-defined notebook collections
 │   └── [notebook_name]/  # Individual notebook directories
-│       ├── docs/         # PDF documents
-│       ├── chromadb/     # Vector database
-│       ├── history/      # Chat history storage
-│       └── metadata.json # Notebook metadata
-├── requirements.txt      # Project dependencies
-└── pyproject.toml        # Build configuration and metadata
+│       ├── docs/         # Source PDF documents
+│       ├── chromadb/     # ChromaDB vector database files
+│       ├── structured_docs/ # Processed document metadata (JSON)
+│       ├── history/      # Chat conversation history (JSON)
+│       └── metadata.json # Notebook configuration and document tracking
+├── configs/              # Configuration files
+│   └── config.yaml       # Application configuration
+├── requirements.txt      # Python dependencies
+├── pyproject.toml        # Build configuration and metadata
+└── CLAUDE.md            # Development guidelines and build commands
 ```
 
 ## 🛠️ Setup and Installation
@@ -137,29 +177,49 @@ streamlit run examples/streamlit_app.py
 
 ## 🧠 Advanced Features
 
+### Intelligent Document Processing
+
+OpenNote's PDF processing pipeline (`pdf_processor.py:35-193`) provides:
+
+- **Structure-Aware Extraction**: Preserves document hierarchy, headings, and formatting
+- **Header/Footer Filtering**: Automatically removes page numbers, headers, and footers using position-based detection
+- **Metadata Extraction**: Captures document title, author, and table of contents when available
+- **Page Break Preservation**: Maintains document structure with clear page demarcations
+
 ### Smart Text Chunking
 
-OpenNote implements sophisticated text chunking to improve retrieval quality:
+The semantic chunking system (`vector_store.py:142-294`) implements:
 
-- **Semantic Chunking**: Documents are split into smaller, overlapping chunks for more precise retrieval
-- **Intelligent Break Points**: The chunking algorithm attempts to find natural break points like paragraphs or sentences
-- **Importance Scoring**: Information-dense chunks are prioritized during retrieval
-- **Metadata Preservation**: Each chunk maintains metadata about its source document and position
+- **Section-Based Segmentation**: Identifies logical document sections using paragraph breaks
+- **Importance Scoring**: Calculates chunk relevance using content density, numbers, and structural markers
+- **Adaptive Sizing**: Respects natural break points while maintaining target chunk sizes
+- **Metadata Enrichment**: Each chunk includes position, source, and calculated importance scores
 
-### Conversation Memory
+### ChromaDB Population and Querying
 
-OpenNote implements conversation memory for more coherent multi-turn interactions:
+The vector database workflow:
 
-- **Context Awareness**: The agent remembers previous exchanges to provide more relevant responses
-- **Memory Management**: Commands to save, load, and clear conversation history
-- **Configurable Memory Size**: Control how many conversation turns to remember
-- **Persistent Storage**: Conversation histories are saved with timestamps
+1. **Document Ingestion**: PDFs are processed and chunked with importance scoring
+2. **Embedding Generation**: Uses sentence-transformers (default: `all-mpnet-base-v2`) for semantic embeddings
+3. **Collection Management**: Creates sanitized ChromaDB collections with proper naming conventions
+4. **Enhanced Retrieval**: Combines vector similarity with importance weighting for optimal context selection
+5. **Query Processing**: Preprocesses queries to remove stopwords and optimize semantic matching
 
-### Multiple LLM Providers
+### Conversation Memory System
 
-- **OpenAI Integration**: Use powerful cloud-based models
-- **Ollama Integration**: Use local open-source models for privacy and cost-savings
-- **Configurable Parameters**: Control temperature, top-k retrieval, and more
+The agent maintains context through (`agent.py:30-308`):
+
+- **Multi-Turn Context**: Remembers recent conversation exchanges (configurable history length)
+- **Persistent Storage**: Saves chat history with timestamps and retrieved context
+- **Memory Management**: Commands to save, load, and clear conversation sessions
+- **Context Integration**: Incorporates conversation history into response generation prompts
+
+### Flexible LLM Integration
+
+- **OpenAI Support**: GPT-3.5/GPT-4 integration with configurable parameters
+- **Ollama Support**: Local model execution for privacy and cost control
+- **Temperature Control**: Adjustable response creativity and determinism
+- **Top-K Retrieval**: Configurable number of context chunks for response generation
 
 ## 🧪 Testing
 
@@ -199,12 +259,28 @@ mypy src/
 
 ## 📦 Key Dependencies
 
-- **chromadb**: Vector database for semantic search
-- **sentence-transformers**: Text embedding models
-- **PyMuPDF**: PDF text extraction
-- **openai**: OpenAI API client
-- **streamlit**: Web UI framework
-- **python-dotenv**: Environment variable management
+### Core Technologies
+- **chromadb (0.6.3)**: Vector database for embeddings storage and similarity search
+- **sentence-transformers (2.2.2)**: Semantic text embeddings using transformer models
+- **PyMuPDF (1.23.26)**: Advanced PDF text extraction with structure preservation
+- **python-dotenv (1.0.1)**: Environment variable management and configuration
+
+### LLM Integration
+- **openai (1.64.0)**: OpenAI GPT model integration for cloud-based responses
+- **requests (2.32.3)**: HTTP client for Ollama local model communication
+
+### Data Processing
+- **numpy (2.2.3)**: Numerical computing for embedding operations
+- **scikit-learn (1.4.2)**: Machine learning utilities for text processing
+
+### Development Tools
+- **black (25.1.0)**: Code formatting with 88-character line limit
+- **mypy**: Static type checking for Python code
+- **pytest**: Unit testing framework
+
+### Optional UI Components
+- **streamlit (1.36.0)**: Web-based user interface for document interaction
+- **pandas (2.2.3)**: Data manipulation for UI components
 
 ## 📜 License
 
