@@ -2,7 +2,7 @@
 Script creates a notebook, adds PDFs, processes them, and generates the ChromaDB vector store.
 It can also start an interactive chat with the AI agent.
 """
-# import sys
+import os
 import argparse
 from opennote.notebook_manager import create_notebook
 from opennote.pdf_processor import process_new_pdfs
@@ -10,7 +10,7 @@ from opennote.vector_store import store_text_in_chromadb
 from opennote.agent import create_agent
 from opennote.cli import chat_loop
 
-def main():
+def main() -> None:
     """
     Main function to create a notebook, process new PDFs, store the text in ChromaDB,
     and optionally start an interactive chat with the AI agent.
@@ -38,11 +38,35 @@ def main():
                         help="Save chat history at the end of the session")
     parser.add_argument("--load-history", "-l",
                         help="Path to load chat history from")
+    parser.add_argument("--create", action="store_true",
+                        help="Create the notebook if it doesn't exist")
 
     args = parser.parse_args()
 
+    # Validate arguments
+    if args.chunk_overlap >= args.chunk_size:
+        print("Error: chunk-overlap must be less than chunk-size")
+        return
+    
+    if args.temperature < 0 or args.temperature > 2:
+        print("Error: temperature must be between 0 and 2")
+        return
+    
+    if args.top_k <= 0:
+        print("Error: top-k must be positive")
+        return
+
     # Create or check the notebook
-    create_notebook(args.notebook_name)
+    if args.create:
+        create_notebook(args.notebook_name)
+    else:
+        notebook_path = os.path.join("notebooks", args.notebook_name)
+        if not os.path.exists(notebook_path):
+            print(f"Error: Notebook '{args.notebook_name}' does not exist.")
+            print("Use --create flag to create it, or run:")
+            print(f"  python -m src.opennote.main {args.notebook_name} --create")
+            return
+        create_notebook(args.notebook_name)  # Ensure subdirectories exist
 
     # Process new PDFs if requested
     if args.process:
@@ -75,13 +99,3 @@ def main():
             print(f"Loaded chat history from {args.load_history}")
 
         chat_loop(agent, args.save_history)
-=======
-Script creates a notebook, adds PDFs, processes them, and generates the ChromaDB vector store
-"""
-import sys
-from opennote.notebook_manager import create_notebook
-from opennote.pdf_processor import process_new_pdfs
-from opennote.vector_store import store_text_in_chromadb
-
-if __name__ == "__main__":
-    main()

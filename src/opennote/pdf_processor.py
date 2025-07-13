@@ -104,9 +104,22 @@ def extract_structured_text_from_pdf(pdf_path: str) -> Dict[str, str]:
         
         return result
     
+    except FileNotFoundError:
+        error_msg = f"PDF file not found: {pdf_path}"
+        print(error_msg)
+        return {"title": os.path.basename(pdf_path), "text": "", "pages": [], "error": error_msg}
+    except PermissionError:
+        error_msg = f"Permission denied accessing PDF: {pdf_path}"
+        print(error_msg)
+        return {"title": os.path.basename(pdf_path), "text": "", "pages": [], "error": error_msg}
+    except fitz.FileDataError as e:
+        error_msg = f"Corrupted or invalid PDF file: {pdf_path} - {str(e)}"
+        print(error_msg)
+        return {"title": os.path.basename(pdf_path), "text": "", "pages": [], "error": error_msg}
     except Exception as e:
-        print(f"Error processing {pdf_path}: {e}")
-        return {"title": os.path.basename(pdf_path), "text": "", "pages": [], "error": str(e)}
+        error_msg = f"Unexpected error processing {pdf_path}: {str(e)}"
+        print(error_msg)
+        return {"title": os.path.basename(pdf_path), "text": "", "pages": [], "error": error_msg}
 
 def extract_text_from_pdf(pdf_path: str) -> str:
     """
@@ -116,11 +129,14 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     try:
         structured_result = extract_structured_text_from_pdf(pdf_path)
         return structured_result["text"]
-    except Exception as e:
+    except (FileNotFoundError, PermissionError, fitz.FileDataError) as e:
         print(f"Error processing {pdf_path}: {e}")
         return ""
+    except Exception as e:
+        print(f"Unexpected error processing {pdf_path}: {e}")
+        return ""
 
-def process_new_pdfs(notebook_name: str, preserve_structure: bool = True):
+def process_new_pdfs(notebook_name: str, preserve_structure: bool = True) -> List[Dict[str, str]]:
     """
     Processes newly added PDFs in a notebook folder.
     
@@ -153,36 +169,46 @@ def process_new_pdfs(notebook_name: str, preserve_structure: bool = True):
 
     processed_docs = set(metadata["documents"])
     new_texts = []
+    pdf_files = [f for f in os.listdir(docs_path) if f.endswith(".pdf") and f not in processed_docs]
+    
+    if not pdf_files:
+        print("No new PDF files to process.")
+        return []
+    
+    print(f"Processing {len(pdf_files)} new PDF file(s)...")
 
-    for file in os.listdir(docs_path):
-        if file.endswith(".pdf") and file not in processed_docs:
-            pdf_path = os.path.join(docs_path, file)
+    for i, file in enumerate(pdf_files, 1):
+        print(f"  [{i}/{len(pdf_files)}] Processing {file}...")
+        pdf_path = os.path.join(docs_path, file)
+        
+        if preserve_structure:
+            # Extract structured information
+            structured_data = extract_structured_text_from_pdf(pdf_path)
+            extracted_text = structured_data["text"]
             
-            if preserve_structure:
-                # Extract structured information
-                structured_data = extract_structured_text_from_pdf(pdf_path)
-                extracted_text = structured_data["text"]
-                
-                # Save structured data for future use
-                struct_file_path = os.path.join(structured_path, f"{os.path.splitext(file)[0]}.json")
-                with open(struct_file_path, "w") as f:
-                    json.dump(structured_data, f, indent=4)
-                
-                # Store structure information in metadata
-                metadata["document_structure"][file] = {
-                    "title": structured_data.get("title", file),
-                    "author": structured_data.get("author", ""),
-                    "structured_path": struct_file_path,
-                    "has_toc": bool(structured_data.get("toc", [])),
-                    "page_count": len(structured_data.get("pages", [])),
-                }
-            else:
-                # Use legacy extraction
-                extracted_text = extract_text_from_pdf(pdf_path)
+            # Save structured data for future use
+            struct_file_path = os.path.join(structured_path, f"{os.path.splitext(file)[0]}.json")
+            with open(struct_file_path, "w") as f:
+                json.dump(structured_data, f, indent=4)
             
-            if extracted_text:
-                new_texts.append({"filename": file, "text": extracted_text})
-                processed_docs.add(file)
+            # Store structure information in metadata
+            metadata["document_structure"][file] = {
+                "title": structured_data.get("title", file),
+                "author": structured_data.get("author", ""),
+                "structured_path": struct_file_path,
+                "has_toc": bool(structured_data.get("toc", [])),
+                "page_count": len(structured_data.get("pages", [])),
+            }
+        else:
+            # Use legacy extraction
+            extracted_text = extract_text_from_pdf(pdf_path)
+        
+        if extracted_text:
+            new_texts.append({"filename": file, "text": extracted_text})
+            processed_docs.add(file)
+            print(f"    ✓ Successfully processed {file}")
+        else:
+            print(f"    ✗ Failed to extract text from {file}")
 
     # Update metadata file
     metadata["documents"] = list(processed_docs)

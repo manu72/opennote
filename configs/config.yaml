@@ -1,0 +1,26 @@
+# OpenNote Configuration File
+# Environment variables take precedence over these settings
+
+# LLM Provider Settings
+openai_model: "gpt-3.5-turbo"
+ollama_base_url: "http://localhost:11434" 
+ollama_model: "deepseek-coder:latest"
+
+# Vector Database Settings
+chroma_embedding_model: "all-MiniLM-L6-v2"
+default_chunk_size: 1000
+default_chunk_overlap: 200
+default_chunk_min_size: 200
+
+# Agent Settings
+default_temperature: 0.7
+default_top_k: 5
+max_history_length: 10
+
+# Performance Settings
+request_timeout: 60
+batch_size: 50
+
+# UI Settings
+debug_mode: false
+show_progress: true
