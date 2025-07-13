@@ -10,7 +10,7 @@ from datetime import datetime
 from opennote.agent import create_agent
 from opennote.notebook_manager import create_notebook
 
-def chat_loop(agent, save_history: bool = False, history_path: Optional[str] = None):
+def chat_loop(agent: 'Agent', save_history: bool = False, history_path: Optional[str] = None) -> None:
     """
     Interactive chat loop with the agent.
     
@@ -58,16 +58,20 @@ def chat_loop(agent, save_history: bool = False, history_path: Optional[str] = N
             print(f"\nAI: {response}")
             
         except KeyboardInterrupt:
+            print("\nChat interrupted by user.")
+            break
+        except EOFError:
+            print("\nInput terminated.")
             break
         except Exception as e:
-            print(f"Error: {str(e)}")
+            print(f"Unexpected error: {str(e)}")
     
     # Save history at the end if requested
     if save_history:
         saved_path = agent.save_chat_history(history_path)
         print(f"Chat history saved to {saved_path}")
 
-def main():
+def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(description="OpenNote AI Agent CLI")
     parser.add_argument("notebook", help="Name of the notebook to use")

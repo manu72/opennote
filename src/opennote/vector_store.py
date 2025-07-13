@@ -9,16 +9,22 @@ from typing import List, Dict, Any, Optional, Tuple
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction  # type: ignore
 from dotenv import load_dotenv
+from opennote.config import get_config
 
 # Load environment variables
 load_dotenv()
 
-# Constants
-# Default to a more powerful embedding model if available
-CHROMA_EMBEDDING_MODEL = os.getenv("CHROMA_EMBEDDING_MODEL", "all-mpnet-base-v2")
-DEFAULT_CHUNK_SIZE = 1000
-DEFAULT_CHUNK_OVERLAP = 200
-DEFAULT_CHUNK_MIN_SIZE = 200  # Minimum chunk size to avoid tiny chunks
+# Get configuration
+config = get_config()
+
+# Constants for backward compatibility
+CHROMA_EMBEDDING_MODEL = config.chroma_embedding_model
+DEFAULT_CHUNK_SIZE = config.default_chunk_size
+DEFAULT_CHUNK_OVERLAP = config.default_chunk_overlap
+DEFAULT_CHUNK_MIN_SIZE = config.default_chunk_min_size
+
+# Cache for embedding functions to avoid reloading models
+_embedding_function_cache: Dict[str, SentenceTransformerEmbeddingFunction] = {}
 
 def sanitize_collection_name(name: str) -> str:
     """
@@ -49,8 +55,34 @@ def sanitize_collection_name(name: str) -> str:
     
     return sanitized
 
-def initialize_chromadb(vector_db_path: str):
-    """Initializes ChromaDB instance for a notebook."""
+def get_embedding_function(model_name: str) -> SentenceTransformerEmbeddingFunction:
+    """
+    Get or create a cached embedding function for the specified model.
+    
+    Args:
+        model_name: Name of the sentence transformer model
+        
+    Returns:
+        Cached or new SentenceTransformerEmbeddingFunction instance
+    """
+    if model_name not in _embedding_function_cache:
+        if config.show_progress:
+            print(f"Loading embedding model: {model_name}")
+        _embedding_function_cache[model_name] = SentenceTransformerEmbeddingFunction(
+            model_name=model_name
+        )
+    return _embedding_function_cache[model_name]
+
+def initialize_chromadb(vector_db_path: str) -> chromadb.PersistentClient:
+    """
+    Initializes ChromaDB instance for a notebook.
+    
+    Args:
+        vector_db_path: Path to the ChromaDB storage directory
+        
+    Returns:
+        Configured ChromaDB PersistentClient instance
+    """
     return chromadb.PersistentClient(path=vector_db_path)
 
 def extract_sections(text: str) -> List[Dict[str, Any]]:
@@ -308,9 +340,9 @@ def chunk_text(text: str, chunk_size: int = DEFAULT_CHUNK_SIZE,
     """
     return semantic_chunk_text(text, chunk_size, chunk_overlap)
 
-def store_text_in_chromadb(notebook_name: str, texts: list, 
+def store_text_in_chromadb(notebook_name: str, texts: List[Dict[str, str]], 
                            chunk_size: int = DEFAULT_CHUNK_SIZE,
-                           chunk_overlap: int = DEFAULT_CHUNK_OVERLAP):
+                           chunk_overlap: int = DEFAULT_CHUNK_OVERLAP) -> None:
     """
     Stores extracted text from PDFs into a ChromaDB vector database.
     
@@ -329,12 +361,12 @@ def store_text_in_chromadb(notebook_name: str, texts: list,
 
     # Sanitize collection name for ChromaDB
     sanitized_name = sanitize_collection_name(notebook_name)
-    existing_collections = client.list_collections()
+    existing_collections = [c.name for c in client.list_collections()]
     if sanitized_name in existing_collections:
-        raise ValueError(f"Collection name '{sanitized_name}' already exists.")
+        print(f"Collection '{sanitized_name}' already exists. Adding new documents to existing collection.")
     collection = client.get_or_create_collection(
         name=sanitized_name,
-        embedding_function=SentenceTransformerEmbeddingFunction(model_name=CHROMA_EMBEDDING_MODEL)
+        embedding_function=get_embedding_function(CHROMA_EMBEDDING_MODEL)
     )
 
     # Load metadata to track chunks
@@ -375,13 +407,23 @@ def store_text_in_chromadb(notebook_name: str, texts: list,
                 "importance": chunk.get("importance", 0.5)  # Include chunk importance
             })
 
-        # Store in ChromaDB
+        # Store in ChromaDB using batching for better performance
         if ids:
-            collection.add(
-                ids=ids,
-                documents=documents,
-                metadatas=metadatas
-            )
+            batch_size = config.batch_size
+            for i in range(0, len(ids), batch_size):
+                batch_ids = ids[i:i + batch_size]
+                batch_docs = documents[i:i + batch_size]
+                batch_metas = metadatas[i:i + batch_size]
+                
+                collection.add(
+                    ids=batch_ids,
+                    documents=batch_docs,
+                    metadatas=batch_metas
+                )
+                
+                if config.show_progress and len(ids) > batch_size:
+                    progress = min(i + batch_size, len(ids))
+                    print(f"  Processed {progress}/{len(ids)} chunks for {filename}")
 
         # Update metadata
         metadata["chunks"][filename] = [chunk["id"] for chunk in chunks]
@@ -467,7 +509,7 @@ def query_vector_db(
 
     collection = client.get_or_create_collection(
         name=collection_name,
-        embedding_function=SentenceTransformerEmbeddingFunction(model_name=CHROMA_EMBEDDING_MODEL)
+        embedding_function=get_embedding_function(CHROMA_EMBEDDING_MODEL)
     )
 
     # Retrieve more results than needed to rerank

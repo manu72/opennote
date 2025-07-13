@@ -13,19 +13,22 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 
 # Import our vector store functions
 from opennote.vector_store import query_vector_db
+from opennote.config import get_config
 
 # Load environment variables
 load_dotenv()
 
-# Constants
-CHROMA_EMBEDDING_MODEL = os.getenv("CHROMA_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-coder:latest")
-DEFAULT_TEMPERATURE = 0.7
-DEFAULT_TOP_K = 5  # Number of relevant chunks to retrieve
-MAX_HISTORY_LENGTH = 10  # Maximum number of conversation turns to keep in memory
+# Get configuration
+config = get_config()
+
+# Constants for backward compatibility
+OPENAI_API_KEY = config.openai_api_key
+OPENAI_MODEL = config.openai_model
+OLLAMA_BASE_URL = config.ollama_base_url
+OLLAMA_MODEL = config.ollama_model
+DEFAULT_TEMPERATURE = config.default_temperature
+DEFAULT_TOP_K = config.default_top_k
+MAX_HISTORY_LENGTH = config.max_history_length
 
 class Agent:
     """
@@ -155,8 +158,18 @@ ANSWER:"""
                 temperature=self.temperature
             )
             return response.choices[0].message.content
+        except ImportError:
+            return "Error: OpenAI library not installed. Please install with 'pip install openai'"
+        except ValueError as e:
+            return f"Configuration error: {str(e)}"
+        except (openai.AuthenticationError, openai.PermissionDeniedError) as e:
+            return f"Authentication error: {str(e)}"
+        except openai.RateLimitError as e:
+            return f"Rate limit exceeded: {str(e)}"
+        except openai.APIConnectionError as e:
+            return f"Connection error: {str(e)}"
         except Exception as e:
-            return f"Error calling OpenAI API: {str(e)}"
+            return f"Unexpected error calling OpenAI API: {str(e)}"
     
     def _call_ollama(self, prompt: str) -> str:
         """
@@ -177,15 +190,23 @@ ANSWER:"""
                     "temperature": self.temperature,
                     "stream": False
                 },
-                timeout=60
+                timeout=config.request_timeout
             )
             
             if response.status_code == 200:
                 return response.json().get("response", "")
             else:
                 return f"Error calling Ollama API: {response.status_code} - {response.text}"
+        except requests.exceptions.ConnectionError:
+            return f"Connection error: Could not connect to Ollama at {OLLAMA_BASE_URL}. Is Ollama running?"
+        except requests.exceptions.Timeout:
+            return "Request timeout: Ollama took too long to respond"
+        except requests.exceptions.RequestException as e:
+            return f"Request error: {str(e)}"
+        except (ValueError, KeyError) as e:
+            return f"Response parsing error: {str(e)}"
         except Exception as e:
-            return f"Error calling Ollama API: {str(e)}"
+            return f"Unexpected error calling Ollama API: {str(e)}"
     
     def chat(self, query: str) -> str:
         """
@@ -228,7 +249,7 @@ ANSWER:"""
         
         return response
     
-    def save_chat_history(self, filepath: Optional[str] = None) -> None:
+    def save_chat_history(self, filepath: Optional[str] = None) -> str:
         """
         Save the chat history to a file.
         

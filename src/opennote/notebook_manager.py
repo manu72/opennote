@@ -12,8 +12,19 @@ import json
 
 NOTEBOOKS_DIR = "notebooks"
 
-def create_notebook(notebook_name: str):
-    """Creates a new notebook with a designated folder and metadata file."""
+def create_notebook(notebook_name: str) -> str:
+    """
+    Creates a new notebook with a designated folder and metadata file.
+    
+    Args:
+        notebook_name: Name of the notebook to create
+        
+    Returns:
+        Path to the created notebook directory
+        
+    Note:
+        If the notebook already exists, returns the existing path.
+    """
     notebook_path = os.path.join(NOTEBOOKS_DIR, notebook_name)
     docs_path = os.path.join(notebook_path, "docs")
     chroma_path = os.path.join(notebook_path, "chromadb")
