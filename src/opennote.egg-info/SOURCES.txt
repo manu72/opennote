@@ -2,6 +2,9 @@ README.md
 pyproject.toml
 src/__init__.py
 src/opennote/__init__.py
+src/opennote/agent.py
+src/opennote/cli.py
+src/opennote/config.py
 src/opennote/main.py
 src/opennote/notebook_manager.py
 src/opennote/pdf_processor.py
@@ -9,5 +12,9 @@ src/opennote/vector_store.py
 src/opennote.egg-info/PKG-INFO
 src/opennote.egg-info/SOURCES.txt
 src/opennote.egg-info/dependency_links.txt
+src/opennote.egg-info/entry_points.txt
 src/opennote.egg-info/top_level.txt
+tests/test_config.py
+tests/test_notebook_manager.py
+tests/test_pdf_processor.py
 tests/test_vector_db.py

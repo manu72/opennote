@@ -104,7 +104,13 @@ opennote/
    pip install -r requirements.txt
    ```
 
-4. Set up environment variables (create a `.env` file with the following variables):
+4. Install OpenNote in development mode (enables the `opennote` command):
+
+   ```bash
+   pip install -e .
+   ```
+
+5. Set up environment variables (create a `.env` file with the following variables):
 
    ```
    OPENAI_API_KEY=your_openai_api_key_here
@@ -117,9 +123,20 @@ opennote/
 
 ## 📚 Usage
 
+**Important**: OpenNote uses relative imports and must be executed as a module. You can use either:
+
+1. **Command-line tool** (recommended): `opennote` (after installing with `pip install -e .`)
+2. **Module execution**: `python -m src.opennote.main`
+
+Do not run the main.py file directly as it will fail due to relative imports.
+
 ### Creating a Notebook
 
 ```bash
+# Using the command-line tool (recommended)
+opennote my_notebook --create
+
+# Or using module execution
 python -m src.opennote.main my_notebook --create
 ```
 
@@ -128,18 +145,30 @@ python -m src.opennote.main my_notebook --create
 Add PDF files to the `notebooks/my_notebook/docs/` directory, then process them:
 
 ```bash
+# Using the command-line tool
+opennote my_notebook --process
+
+# Or using module execution
 python -m src.opennote.main my_notebook --process
 ```
 
 Advanced options for text chunking:
 
 ```bash
+# Using the command-line tool
+opennote my_notebook --process --chunk-size 1500 --chunk-overlap 300
+
+# Or using module execution
 python -m src.opennote.main my_notebook --process --chunk-size 1500 --chunk-overlap 300
 ```
 
 ### Chatting with Your Documents
 
 ```bash
+# Using the command-line tool
+opennote my_notebook --chat
+
+# Or using module execution
 python -m src.opennote.main my_notebook --chat
 ```
 
@@ -147,15 +176,21 @@ Using different LLM providers:
 
 ```bash
 # With OpenAI
+opennote my_notebook --chat --provider openai --model gpt-4
 python -m src.opennote.main my_notebook --chat --provider openai --model gpt-4
 
 # With Ollama
+opennote my_notebook --chat --provider ollama --model llama2
 python -m src.opennote.main my_notebook --chat --provider ollama --model llama2
 ```
 
 Advanced RAG options:
 
 ```bash
+# Using the command-line tool
+opennote my_notebook --chat --top-k 7 --temperature 0.5
+
+# Or using module execution
 python -m src.opennote.main my_notebook --chat --top-k 7 --temperature 0.5
 ```
 
@@ -260,25 +295,30 @@ mypy src/
 ## 📦 Key Dependencies
 
 ### Core Technologies
+
 - **chromadb (0.6.3)**: Vector database for embeddings storage and similarity search
 - **sentence-transformers (2.2.2)**: Semantic text embeddings using transformer models
 - **PyMuPDF (1.23.26)**: Advanced PDF text extraction with structure preservation
 - **python-dotenv (1.0.1)**: Environment variable management and configuration
 
 ### LLM Integration
+
 - **openai (1.64.0)**: OpenAI GPT model integration for cloud-based responses
 - **requests (2.32.3)**: HTTP client for Ollama local model communication
 
 ### Data Processing
+
 - **numpy (2.2.3)**: Numerical computing for embedding operations
 - **scikit-learn (1.4.2)**: Machine learning utilities for text processing
 
 ### Development Tools
+
 - **black (25.1.0)**: Code formatting with 88-character line limit
 - **mypy**: Static type checking for Python code
 - **pytest**: Unit testing framework
 
 ### Optional UI Components
+
 - **streamlit (1.36.0)**: Web-based user interface for document interaction
 - **pandas (2.2.3)**: Data manipulation for UI components
 
