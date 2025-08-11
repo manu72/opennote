@@ -47,11 +47,11 @@ def main() -> None:
     if args.chunk_overlap >= args.chunk_size:
         print("Error: chunk-overlap must be less than chunk-size")
         return
-    
+
     if args.temperature < 0 or args.temperature > 2:
         print("Error: temperature must be between 0 and 2")
         return
-    
+
     if args.top_k <= 0:
         print("Error: top-k must be positive")
         return
@@ -64,6 +64,8 @@ def main() -> None:
         if not os.path.exists(notebook_path):
             print(f"Error: Notebook '{args.notebook_name}' does not exist.")
             print("Use --create flag to create it, or run:")
+            print(f"  opennote {args.notebook_name} --create")
+            print(f"  # or")
             print(f"  python -m src.opennote.main {args.notebook_name} --create")
             return
         create_notebook(args.notebook_name)  # Ensure subdirectories exist
