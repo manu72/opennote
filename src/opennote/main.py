@@ -4,11 +4,11 @@ It can also start an interactive chat with the AI agent.
 """
 import os
 import argparse
-from opennote.notebook_manager import create_notebook
-from opennote.pdf_processor import process_new_pdfs
-from opennote.vector_store import store_text_in_chromadb
-from opennote.agent import create_agent
-from opennote.cli import chat_loop
+from .notebook_manager import create_notebook
+from .pdf_processor import process_new_pdfs
+from .vector_store import store_text_in_chromadb
+from .agent import create_agent
+from .cli import chat_loop
 
 def main() -> None:
     """
@@ -99,3 +99,6 @@ def main() -> None:
             print(f"Loaded chat history from {args.load_history}")
 
         chat_loop(agent, args.save_history)
+
+if __name__ == "__main__":
+    main()
